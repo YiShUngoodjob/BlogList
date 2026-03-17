@@ -1,0 +1,21 @@
+# 后端
+backend/__pycache__/
+backend/*.pyc
+backend/venv/
+backend/blog.db
+backend/.env
+backend/vipcode.json
+backend/uploads/
+
+# 前端
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# IDE
+.vscode/
+.idea/
+
+# 系统文件
+.DS_Store
+Thumbs.db
