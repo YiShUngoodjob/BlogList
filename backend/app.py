@@ -14,7 +14,7 @@ from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 import jwt
 
-from models import db, User
+from models import db, User, Message
 
 # 加载环境变量
 load_dotenv()
@@ -387,6 +387,152 @@ def upload_avatar(current_user):
 def serve_upload(filename):
     """提供上传的文件"""
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
+@app.route('/api/messages/<user_id>', methods=['GET'])
+@token_required
+def get_conversation(current_user, user_id):
+    """获取与指定用户的聊天记录"""
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)
+
+    messages = Message.query.filter(
+        ((Message.sender_id == current_user.id) & (Message.receiver_id == user_id)) |
+        ((Message.sender_id == user_id) & (Message.receiver_id == current_user.id))
+    ).order_by(Message.created_at.asc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+
+    Message.query.filter(
+        (Message.sender_id == user_id) &
+        (Message.receiver_id == current_user.id) &
+        (Message.status != 'read')
+    ).update({'status': 'read', 'read_at': datetime.utcnow()})
+    db.session.commit()
+
+    return jsonify({
+        'messages': [msg.to_dict() for msg in messages.items],
+        'total': messages.total,
+        'pages': messages.pages,
+        'current_page': page
+    })
+
+
+@app.route('/api/messages', methods=['GET'])
+@token_required
+def get_conversation_list(current_user):
+    """获取会话列表（与每个用户的最后一条消息）"""
+    from sqlalchemy import or_, func
+
+    subquery = db.session.query(
+        Message.receiver_id.label('partner_id'),
+        func.max(Message.created_at).label('last_time')
+    ).filter(Message.sender_id == current_user.id).group_by(Message.receiver_id).union(
+        db.session.query(
+            Message.sender_id.label('partner_id'),
+            func.max(Message.created_at).label('last_time')
+        ).filter(Message.receiver_id == current_user.id).group_by(Message.sender_id)
+    ).subquery()
+
+    conversations = db.session.query(User, subquery.c.last_time).join(
+        subquery, User.id == subquery.c.partner_id
+    ).order_by(subquery.c.last_time.desc()).all()
+
+    result = []
+    for user, last_time in conversations:
+        last_msg = Message.query.filter(
+            or_(
+                (Message.sender_id == current_user.id) & (Message.receiver_id == user.id),
+                (Message.sender_id == user.id) & (Message.receiver_id == current_user.id)
+            )
+        ).order_by(Message.created_at.desc()).first()
+
+        unread_count = Message.query.filter(
+            (Message.sender_id == user.id) &
+            (Message.receiver_id == current_user.id) &
+            (Message.status != 'read')
+        ).count()
+
+        result.append({
+            'partner': user.to_list_item(),
+            'last_message': last_msg.to_dict() if last_msg else None,
+            'last_time': last_time.isoformat() if last_time else None,
+            'unread_count': unread_count
+        })
+
+    return jsonify({'conversations': result})
+
+
+@app.route('/api/messages', methods=['POST'])
+@token_required
+def send_message(current_user):
+    """发送私信"""
+    data = request.get_json()
+    receiver_id = data.get('receiver_id')
+    content = data.get('content')
+
+    if not receiver_id or not content:
+        return jsonify({'message': 'Missing receiver_id or content'}), 400
+
+    receiver = db.session.get(User, receiver_id)
+    if not receiver:
+        return jsonify({'message': 'Receiver not found'}), 404
+
+    if len(content) > 1000:
+        return jsonify({'message': 'Message too long (max 1000 characters)'}), 400
+
+    message = Message(
+        sender_id=current_user.id,
+        receiver_id=receiver_id,
+        content=content,
+        status='sent'
+    )
+
+    db.session.add(message)
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Message sent',
+        'msg': message.to_dict()
+    }), 201
+
+
+@app.route('/api/messages/<message_id>/status', methods=['PUT'])
+@token_required
+def update_message_status(current_user, message_id):
+    """更新消息状态（送达/已读）"""
+    data = request.get_json()
+    status = data.get('status')
+
+    if status not in ['delivered', 'read']:
+        return jsonify({'message': 'Invalid status'}), 400
+
+    message = db.session.get(Message, message_id)
+    if not message:
+        return jsonify({'message': 'Message not found'}), 404
+
+    if message.receiver_id != current_user.id:
+        return jsonify({'message': 'Unauthorized'}), 403
+
+    message.status = status
+    if status == 'read':
+        message.read_at = datetime.utcnow()
+
+    db.session.commit()
+
+    return jsonify({'message': 'Status updated', 'msg': message.to_dict()})
+
+
+@app.route('/api/messages/unread', methods=['GET'])
+@token_required
+def get_unread_count(current_user):
+    """获取未读消息数量"""
+    count = Message.query.filter(
+        (Message.receiver_id == current_user.id) &
+        (Message.status != 'read')
+    ).count()
+
+    return jsonify({'unread_count': count})
 
 
 if __name__ == '__main__':

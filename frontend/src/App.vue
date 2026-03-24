@@ -53,6 +53,10 @@ const goToRegister = () => {
 const goHome = () => {
   router.push('/')
 }
+
+const goToChat = () => {
+  router.push('/chat')
+}
 </script>
 
 <template>
@@ -64,6 +68,10 @@ const goHome = () => {
       </div>
       <div class="navbar-actions">
         <template v-if="isLoggedIn">
+          <el-button @click="goToChat">
+            <el-icon><ChatDotRound /></el-icon>
+            私信
+          </el-button>
           <el-button @click="goToProfile" type="primary">
             <el-icon><User /></el-icon>
             编辑资料

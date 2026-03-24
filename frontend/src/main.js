@@ -12,6 +12,7 @@ import Register from './views/Register.vue'
 import ProfileEdit from './views/ProfileEdit.vue'
 import UserList from './views/UserList.vue'
 import UserDetail from './views/UserDetail.vue'
+import Chat from './views/Chat.vue'
 
 // 创建路由
 const routes = [
@@ -19,7 +20,8 @@ const routes = [
   { path: '/login', name: 'Login', component: Login },
   { path: '/register', name: 'Register', component: Register },
   { path: '/profile', name: 'ProfileEdit', component: ProfileEdit },
-  { path: '/user/:id', name: 'UserDetail', component: UserDetail }
+  { path: '/user/:id', name: 'UserDetail', component: UserDetail },
+  { path: '/chat', name: 'Chat', component: Chat }
 ]
 
 const router = createRouter({

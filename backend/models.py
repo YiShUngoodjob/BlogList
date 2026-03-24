@@ -49,3 +49,31 @@ class User(db.Model):
             'school': self.school,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
+
+
+class Message(db.Model):
+    __tablename__ = 'messages'
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    sender_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
+    receiver_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(20), default='sent')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    read_at = db.Column(db.DateTime, nullable=True)
+
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
+    receiver = db.relationship('User', foreign_keys=[receiver_id], backref='received_messages')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'sender_id': self.sender_id,
+            'receiver_id': self.receiver_id,
+            'content': self.content,
+            'status': self.status,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'read_at': self.read_at.isoformat() if self.read_at else None,
+            'sender': self.sender.to_list_item() if self.sender else None,
+            'receiver': self.receiver.to_list_item() if self.receiver else None
+        }

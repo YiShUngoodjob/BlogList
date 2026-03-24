@@ -78,4 +78,23 @@ export const userAPI = {
   }
 }
 
+// 私信相关
+export const messageAPI = {
+  getConversationList() {
+    return api.get('/messages')
+  },
+  getConversation(userId, params) {
+    return api.get(`/messages/${userId}`, { params })
+  },
+  sendMessage(data) {
+    return api.post('/messages', data)
+  },
+  updateMessageStatus(messageId, status) {
+    return api.put(`/messages/${messageId}/status`, { status })
+  },
+  getUnreadCount() {
+    return api.get('/messages/unread')
+  }
+}
+
 export default api

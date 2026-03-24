@@ -43,6 +43,15 @@ const goToRegister = () => {
   router.push('/register')
 }
 
+const goToChat = (user) => {
+  event.stopPropagation()
+  router.push({ path: '/chat', query: { userId: user.id } })
+}
+
+const isLoggedIn = computed(() => {
+  return !!localStorage.getItem('token')
+})
+
 // 获取头像URL
 const getAvatarUrl = (user) => {
   if (user.avatar_url) {
@@ -91,6 +100,16 @@ const displayInfo = (user) => {
             <h3 class="user-name">{{ user.name }}</h3>
             <p class="user-info" v-if="displayInfo(user)">{{ displayInfo(user) }}</p>
           </div>
+          <el-button
+            v-if="isLoggedIn"
+            class="message-btn"
+            type="primary"
+            size="small"
+            @click="goToChat(user)"
+          >
+            <el-icon><ChatDotRound /></el-icon>
+            发私信
+          </el-button>
         </div>
       </div>
 
@@ -118,9 +137,9 @@ const displayInfo = (user) => {
 </template>
 
 <script>
-import { UserFilled } from '@element-plus/icons-vue'
+import { UserFilled, ChatDotRound } from '@element-plus/icons-vue'
 export default {
-  components: { UserFilled }
+  components: { UserFilled, ChatDotRound }
 }
 </script>
 
@@ -198,6 +217,10 @@ export default {
 .user-info {
   font-size: 14px;
   color: var(--text-secondary);
+}
+
+.message-btn {
+  margin-top: 12px;
 }
 
 /* 空状态 */
