@@ -70,7 +70,7 @@ const displayInfo = (user) => {
     <div class="container">
       <div class="page-header">
         <h1 class="page-title">发现 TA</h1>
-        <p class="page-subtitle">探索身边的博主，发现精彩</p>
+        <p class="page-subtitle">探索世界，发现精彩</p>
       </div>
 
       <!-- 用户列表 -->
@@ -98,7 +98,7 @@ const displayInfo = (user) => {
       <div v-if="!loading && users.length === 0" class="empty-state glass-card">
         <el-icon class="empty-icon"><UserFilled /></el-icon>
         <h3>暂无博客，快来创建第一个吧！</h3>
-        <p>分享你的故事，让更多人认识你</p>
+        <p>分享你自己，让更多人认识你</p>
         <el-button type="primary" @click="goToRegister">立即创建</el-button>
       </div>
 

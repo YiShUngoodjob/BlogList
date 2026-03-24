@@ -59,7 +59,8 @@ def allowed_file(filename):
 def load_invite_codes():
     """加载邀请码"""
     try:
-        with open('vipcode.json', 'r', encoding='utf-8') as f:
+        code_file = os.path.join(os.path.dirname(__file__), 'vipcode.json')
+        with open(code_file, 'r', encoding='utf-8') as f:
             return json.load(f)
     except FileNotFoundError:
         return []
