@@ -123,6 +123,15 @@ def token_required(f):
     return decorated
 
 
+def admin_required(f):
+    @wraps(f)
+    def decorated(current_user, *args, **kwargs):
+        if not current_user.is_admin:
+            return jsonify({'message': 'Admin access required'}), 403
+        return f(current_user, *args, **kwargs)
+    return decorated
+
+
 # ============ 注册相关接口 ============
 
 @app.route('/api/send-code', methods=['POST'])
@@ -533,6 +542,110 @@ def get_unread_count(current_user):
     ).count()
 
     return jsonify({'unread_count': count})
+
+
+# ============ 管理员接口 ============
+
+@app.route('/api/admin/users', methods=['GET'])
+@token_required
+@admin_required
+def get_all_users_admin(current_user):
+    """获取所有用户列表（管理员专用）"""
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)
+
+    pagination = User.query.order_by(User.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+
+    users = [user.to_dict() for user in pagination.items]
+
+    return jsonify({
+        'users': users,
+        'total': pagination.total,
+        'pages': pagination.pages,
+        'current_page': page
+    })
+
+
+@app.route('/api/admin/users/<user_id>', methods=['DELETE'])
+@token_required
+@admin_required
+def delete_user_admin(current_user, user_id):
+    """删除指定用户（管理员专用）"""
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+
+    # 不能删除自己
+    if user.id == current_user.id:
+        return jsonify({'message': 'Cannot delete yourself'}), 400
+
+    # 删除关联的消息
+    Message.query.filter(
+        (Message.sender_id == user.id) | (Message.receiver_id == user.id)
+    ).delete()
+
+    db.session.delete(user)
+    db.session.commit()
+
+    return jsonify({'message': 'User deleted successfully'})
+
+
+@app.route('/api/admin/users/<user_id>', methods=['PUT'])
+@token_required
+@admin_required
+def update_user_admin(current_user, user_id):
+    """编辑指定用户信息（管理员专用）"""
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+
+    data = request.get_json()
+
+    if data.get('name'):
+        if len(data['name']) > 20:
+            return jsonify({'message': 'Name must be 20 characters or less'}), 400
+        user.name = data['name']
+
+    if data.get('school'):
+        if len(data['school']) > 50:
+            return jsonify({'message': 'School must be 50 characters or less'}), 400
+        user.school = data['school']
+
+    if data.get('job'):
+        if len(data['job']) > 30:
+            return jsonify({'message': 'Job must be 30 characters or less'}), 400
+        user.job = data['job']
+
+    if data.get('bio') is not None:
+        if len(data['bio']) > 200:
+            return jsonify({'message': 'Bio must be 200 characters or less'}), 400
+        user.bio = data['bio']
+
+    if data.get('skills') is not None:
+        import json as json_module
+        if len(data['skills']) > 10:
+            return jsonify({'message': 'Maximum 10 skills allowed'}), 400
+        for skill in data['skills']:
+            if len(skill) > 10:
+                return jsonify({'message': 'Each skill must be 10 characters or less'}), 400
+        user.skills = json_module.dumps(data['skills'])
+
+    if data.get('experience') is not None:
+        import json as json_module
+        user.experience = json_module.dumps(data['experience'])
+
+    if data.get('hobbies') is not None:
+        user.hobbies = data['hobbies']
+
+    user.updated_at = datetime.utcnow()
+    db.session.commit()
+
+    return jsonify({
+        'message': 'User updated successfully',
+        'user': user.to_dict()
+    })
 
 
 if __name__ == '__main__':
