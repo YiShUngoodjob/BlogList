@@ -13,6 +13,7 @@ import ProfileEdit from './views/ProfileEdit.vue'
 import UserList from './views/UserList.vue'
 import UserDetail from './views/UserDetail.vue'
 import Chat from './views/Chat.vue'
+import Admin from './views/Admin.vue'
 
 // 创建路由
 const routes = [
@@ -21,7 +22,8 @@ const routes = [
   { path: '/register', name: 'Register', component: Register },
   { path: '/profile', name: 'ProfileEdit', component: ProfileEdit },
   { path: '/user/:id', name: 'UserDetail', component: UserDetail },
-  { path: '/chat', name: 'Chat', component: Chat }
+  { path: '/chat', name: 'Chat', component: Chat },
+  { path: '/admin', name: 'Admin', component: Admin }
 ]
 
 const router = createRouter({
