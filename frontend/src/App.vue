@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { ChatDotRound, User, SwitchButton, Setting } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -57,6 +58,10 @@ const goHome = () => {
 const goToChat = () => {
   router.push('/chat')
 }
+
+const goToAdmin = () => {
+  router.push('/admin')
+}
 </script>
 
 <template>
@@ -71,6 +76,10 @@ const goToChat = () => {
           <el-button @click="goToChat">
             <el-icon><ChatDotRound /></el-icon>
             私信
+          </el-button>
+          <el-button v-if="currentUser?.is_admin" @click="goToAdmin">
+            <el-icon><Setting /></el-icon>
+            管理
           </el-button>
           <el-button @click="goToProfile" type="primary">
             <el-icon><User /></el-icon>
