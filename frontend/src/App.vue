@@ -67,7 +67,7 @@ const goToAdmin = () => {
 <template>
   <div id="app">
     <!-- 导航栏 -->
-    <nav class="navbar" v-if="route.path !== '/login' && route.path !== '/register'">
+    <nav class="navbar" v-if="route.path !== '/login' && route.path !== '/register' && route.path !== '/reset-password'">
       <div class="navbar-brand" @click="goHome" style="cursor: pointer;">
         个人博客
       </div>

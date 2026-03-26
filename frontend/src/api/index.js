@@ -110,4 +110,14 @@ export const adminAPI = {
   }
 }
 
+// 忘记密码相关
+export const resetPasswordAPI = {
+  sendCode(data) {
+    return api.post('/reset-password/send-code', data)
+  },
+  resetPassword(data) {
+    return api.post('/reset-password', data)
+  }
+}
+
 export default api

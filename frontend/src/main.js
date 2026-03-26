@@ -14,12 +14,14 @@ import UserList from './views/UserList.vue'
 import UserDetail from './views/UserDetail.vue'
 import Chat from './views/Chat.vue'
 import Admin from './views/Admin.vue'
+import ResetPassword from './views/ResetPassword.vue'
 
 // 创建路由
 const routes = [
   { path: '/', name: 'UserList', component: UserList },
   { path: '/login', name: 'Login', component: Login },
   { path: '/register', name: 'Register', component: Register },
+  { path: '/reset-password', name: 'ResetPassword', component: ResetPassword },
   { path: '/profile', name: 'ProfileEdit', component: ProfileEdit },
   { path: '/user/:id', name: 'UserDetail', component: UserDetail },
   { path: '/chat', name: 'Chat', component: Chat },

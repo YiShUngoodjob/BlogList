@@ -44,7 +44,8 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 # 验证码和邀请码存储（生产环境应使用 Redis）
-verification_codes = {}  # {email: {code: xxx, expires: datetime}}
+verification_codes = {}  # {email: {code: xxx, expires: datetime, type: 'register'|'reset'}}
+reset_password_codes = {}  # {email: {code: xxx, expires: datetime}}
 
 db.init_app(app)
 
@@ -542,6 +543,96 @@ def get_unread_count(current_user):
     ).count()
 
     return jsonify({'unread_count': count})
+
+
+# ============ 忘记密码接口 ============
+
+@app.route('/api/reset-password/send-code', methods=['POST'])
+def send_reset_password_code():
+    """发送密码重置验证码"""
+    data = request.get_json()
+    email = data.get('email')
+    invite_code = data.get('invite_code')
+
+    if not email or not invite_code:
+        return jsonify({'message': '邮箱和邀请码不能为空'}), 400
+
+    import re
+    if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+        return jsonify({'message': '邮箱格式不正确'}), 400
+
+    user = User.query.filter_by(username=email).first()
+    if not user:
+        return jsonify({'message': '该邮箱未注册'}), 400
+
+    if not check_invite_code(invite_code):
+        return jsonify({'message': '邀请码无效'}), 400
+
+    code = generate_code(6)
+    reset_password_codes[email] = {
+        'code': code,
+        'expires': datetime.utcnow() + timedelta(minutes=5)
+    }
+
+    try:
+        msg = MIMEText(f'您的密码重置验证码是：{code}，5分钟内有效。', 'plain', 'utf-8')
+        msg['Subject'] = '密码重置验证码'
+        msg['From'] = app.config['MAIL_DEFAULT_SENDER']
+        msg['To'] = email
+
+        server = smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT'])
+        server.starttls()
+        server.login(app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
+        server.sendmail(app.config['MAIL_DEFAULT_SENDER'], email, msg.as_string())
+        server.quit()
+        return jsonify({'message': '验证码已发送'}), 200
+    except Exception as e:
+        print(f"发送邮件失败: {e}")
+        return jsonify({'message': '发送失败，请稍后重试'}), 500
+
+
+@app.route('/api/reset-password', methods=['POST'])
+def reset_password():
+    """重置密码"""
+    data = request.get_json()
+    email = data.get('email')
+    code = data.get('code')
+    new_password = data.get('new_password')
+    confirm_password = data.get('confirm_password')
+
+    if not email or not code or not new_password or not confirm_password:
+        return jsonify({'message': '所有字段都不能为空'}), 400
+
+    if new_password != confirm_password:
+        return jsonify({'message': '两次输入的密码不一致'}), 400
+
+    if len(new_password) < 6:
+        return jsonify({'message': '密码长度至少6位'}), 400
+
+    if not re.match(r'^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{6,20}$', new_password):
+        return jsonify({'message': '密码必须包含字母和数字'}), 400
+
+    if email not in reset_password_codes:
+        return jsonify({'message': '请先获取验证码'}), 400
+
+    stored = reset_password_codes[email]
+    if datetime.utcnow() > stored['expires']:
+        del reset_password_codes[email]
+        return jsonify({'message': '验证码已过期'}), 400
+
+    if stored['code'] != code:
+        return jsonify({'message': '验证码错误'}), 400
+
+    user = User.query.filter_by(username=email).first()
+    if not user:
+        return jsonify({'message': '用户不存在'}), 404
+
+    user.password_hash = generate_password_hash(new_password)
+    db.session.commit()
+
+    del reset_password_codes[email]
+
+    return jsonify({'message': '密码重置成功'}), 200
 
 
 # ============ 管理员接口 ============

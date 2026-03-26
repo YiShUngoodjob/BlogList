@@ -34,6 +34,10 @@ const handleLogin = async () => {
 const goToRegister = () => {
   router.push('/register')
 }
+
+const goToResetPassword = () => {
+  router.push('/reset-password')
+}
 </script>
 
 <template>
@@ -72,7 +76,10 @@ const goToRegister = () => {
         </el-form-item>
       </el-form>
       <div class="auth-footer">
-        还没有账号？<span @click="goToRegister">立即注册</span>
+        <span class="forgot-password" @click="goToResetPassword">忘记密码？</span>
+        <div class="register-link">
+          还没有账号？<span @click="goToRegister">立即注册</span>
+        </div>
       </div>
     </div>
   </div>
@@ -120,6 +127,20 @@ export default {
   text-align: center;
   margin-top: 20px;
   color: var(--text-secondary);
+}
+
+.forgot-password {
+  color: #999;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.forgot-password:hover {
+  color: #667eea;
+}
+
+.register-link {
+  margin-top: 10px;
 }
 
 .auth-footer span {

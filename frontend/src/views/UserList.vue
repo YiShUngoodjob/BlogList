@@ -90,6 +90,14 @@ const displayInfo = (user) => {
           class="user-card glass-card"
           @click="goToDetail(user.id)"
         >
+          <el-button
+            v-if="isLoggedIn"
+            class="message-btn"
+            size="small"
+            @click="goToChat(user)"
+          >
+            <el-icon><ChatDotRound /></el-icon>
+          </el-button>
           <div class="card-avatar">
             <img v-if="getAvatarUrl(user)" :src="getAvatarUrl(user)" class="avatar avatar-md" />
             <div v-else class="avatar-placeholder avatar-md">
@@ -100,16 +108,6 @@ const displayInfo = (user) => {
             <h3 class="user-name">{{ user.name }}</h3>
             <p class="user-info" v-if="displayInfo(user)">{{ displayInfo(user) }}</p>
           </div>
-          <el-button
-            v-if="isLoggedIn"
-            class="message-btn"
-            type="primary"
-            size="small"
-            @click="goToChat(user)"
-          >
-            <el-icon><ChatDotRound /></el-icon>
-            发私信
-          </el-button>
         </div>
       </div>
 
@@ -220,7 +218,34 @@ export default {
 }
 
 .message-btn {
-  margin-top: 12px;
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 6px 10px;
+  min-width: 32px;
+  height: 32px;
+  z-index: 10;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.message-btn :deep(.el-icon) {
+  font-size: 16px;
+}
+
+.message-btn:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(102, 126, 234, 0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.user-card {
+  position: relative;
+  padding: 24px;
 }
 
 /* 空状态 */
