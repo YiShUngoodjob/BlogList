@@ -21,6 +21,7 @@ class User(db.Model):
     hobbies = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_admin = db.Column(db.Boolean, default=False, nullable=False)
 
     def to_dict(self):
         import json
@@ -36,7 +37,8 @@ class User(db.Model):
             'experience': json.loads(self.experience) if self.experience else [],
             'hobbies': self.hobbies,
             'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'is_admin': self.is_admin
         }
 
     def to_list_item(self):
