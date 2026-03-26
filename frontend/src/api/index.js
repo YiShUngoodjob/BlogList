@@ -97,4 +97,17 @@ export const messageAPI = {
   }
 }
 
+// 管理员相关
+export const adminAPI = {
+  getAllUsers(params) {
+    return api.get('/admin/users', { params })
+  },
+  deleteUser(userId) {
+    return api.delete(`/admin/users/${userId}`)
+  },
+  updateUser(userId, data) {
+    return api.put(`/admin/users/${userId}`, data)
+  }
+}
+
 export default api
