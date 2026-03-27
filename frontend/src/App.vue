@@ -3,11 +3,14 @@ import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ChatDotRound, User, SwitchButton, Setting } from '@element-plus/icons-vue'
+import { messageAPI } from './api'
 
 const router = useRouter()
 const route = useRoute()
 const isLoggedIn = ref(false)
 const currentUser = ref(null)
+const unreadCount = ref(0)
+let previousRoute = ''
 
 // 检查登录状态
 const checkAuth = () => {
@@ -16,18 +19,40 @@ const checkAuth = () => {
   if (token && user) {
     isLoggedIn.value = true
     currentUser.value = JSON.parse(user)
+    fetchUnreadCount()
   } else {
     isLoggedIn.value = false
     currentUser.value = null
+    unreadCount.value = 0
+  }
+}
+
+const fetchUnreadCount = async () => {
+  if (!localStorage.getItem('token')) return
+  try {
+    const res = await messageAPI.getUnreadCount()
+    unreadCount.value = res.data.unread_count || 0
+  } catch (err) {
+    console.error('Failed to fetch unread count:', err)
   }
 }
 
 onMounted(() => {
   checkAuth()
+  
+  router.afterEach((to, from) => {
+    if (from.path === '/chat' && to.path === '/') {
+      fetchUnreadCount()
+    }
+    previousRoute = from.path
+  })
 })
 
 watch(() => route.path, () => {
   checkAuth()
+  if (route.path === '/') {
+    fetchUnreadCount()
+  }
 })
 
 const handleLogout = () => {
@@ -73,10 +98,12 @@ const goToAdmin = () => {
       </div>
       <div class="navbar-actions">
         <template v-if="isLoggedIn">
-          <el-button @click="goToChat">
-            <el-icon><ChatDotRound /></el-icon>
-            私信
-          </el-button>
+          <el-badge :value="unreadCount" :hidden="unreadCount === 0" :max="99" class="message-badge">
+            <el-button @click="goToChat">
+              <el-icon><ChatDotRound /></el-icon>
+              私信
+            </el-button>
+          </el-badge>
           <el-button v-if="currentUser?.is_admin" @click="goToAdmin">
             <el-icon><Setting /></el-icon>
             管理
@@ -130,5 +157,19 @@ const goToAdmin = () => {
 .navbar-actions {
   display: flex;
   gap: 12px;
+}
+
+.message-badge :deep(.el-badge__content) {
+  background-color: #FF4D4F;
+  border: none;
+  font-size: 12px;
+  padding: 0 5px;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+}
+
+.message-badge :deep(.el-badge__content--danger) {
+  background-color: #FF4D4F;
 }
 </style>
